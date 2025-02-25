@@ -1,17 +1,22 @@
-import { CardType } from "@/components/game/GameCard";
+import { CardType, CardValue } from "@/components/game/GameCard";
+
+// 生成唯一ID的輔助函數
+function generateId(): string {
+  return Math.random().toString(36).substring(2, 10);
+}
 
 export function determineWinner(
   playerCard: CardType,
   opponentCard: CardType
 ): "win" | "lose" | "draw" {
-  if (playerCard === opponentCard) {
+  if (playerCard.value === opponentCard.value) {
     return "draw";
   }
 
   if (
-    (playerCard === "rock" && opponentCard === "scissors") ||
-    (playerCard === "paper" && opponentCard === "rock") ||
-    (playerCard === "scissors" && opponentCard === "paper")
+    (playerCard.value === "rock" && opponentCard.value === "scissors") ||
+    (playerCard.value === "paper" && opponentCard.value === "rock") ||
+    (playerCard.value === "scissors" && opponentCard.value === "paper")
   ) {
     return "win";
   }
@@ -20,36 +25,44 @@ export function determineWinner(
 }
 
 export function getInitialDeck(): CardType[] {
-  // Start with 3 of each card type
-  return [
-    "rock", "rock", "rock",
-    "paper", "paper", "paper",
-    "scissors", "scissors", "scissors"
-  ];
+  // 創建初始牌組，每種卡牌3張，每張有唯一ID
+  const cardValues: CardValue[] = ["rock", "paper", "scissors"];
+  const deck: CardType[] = [];
+  
+  cardValues.forEach(value => {
+    for (let i = 0; i < 3; i++) {
+      deck.push({
+        id: `${value}-${generateId()}`,
+        value: value
+      });
+    }
+  });
+  
+  return deck;
 }
 
 export function transferCard(
   fromDeck: CardType[],
   toDeck: CardType[],
-  cardType: CardType
+  cardToTransfer: CardType
 ): { updatedFromDeck: CardType[]; updatedToDeck: CardType[] } {
-  // Find the index of the first occurrence of the card
-  const cardIndex = fromDeck.indexOf(cardType);
+  // 根據ID找到要轉移的卡牌
+  const cardIndex = fromDeck.findIndex(card => card.id === cardToTransfer.id);
   
   if (cardIndex === -1) {
-    // Card not found, return decks unchanged
+    // 卡牌未找到，返回原始牌組
     return { updatedFromDeck: [...fromDeck], updatedToDeck: [...toDeck] };
   }
   
-  // Create new arrays
+  // 創建新的牌組數組
   const updatedFromDeck = [...fromDeck];
   const updatedToDeck = [...toDeck];
   
-  // Remove the card from the source deck
-  updatedFromDeck.splice(cardIndex, 1);
+  // 從源牌組中移除卡牌
+  const [removedCard] = updatedFromDeck.splice(cardIndex, 1);
   
-  // Add the card to the destination deck
-  updatedToDeck.push(cardType);
+  // 將卡牌添加到目標牌組
+  updatedToDeck.push(removedCard);
   
   return { updatedFromDeck, updatedToDeck };
 } 

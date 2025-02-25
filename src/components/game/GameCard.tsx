@@ -3,10 +3,15 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-export type CardType = "rock" | "paper" | "scissors";
+export type CardValue = "rock" | "paper" | "scissors";
+
+export interface CardType {
+  id: string;
+  value: CardValue;
+}
 
 interface GameCardProps {
-  type: CardType;
+  card: CardType;
   isFlipped?: boolean;
   isSelectable?: boolean;
   onClick?: () => void;
@@ -26,7 +31,7 @@ const cardColors = {
 };
 
 export const GameCard: React.FC<GameCardProps> = ({
-  type,
+  card,
   isFlipped = false,
   isSelectable = false,
   onClick,
@@ -64,12 +69,13 @@ export const GameCard: React.FC<GameCardProps> = ({
         <Card
           className={cn(
             "absolute w-full h-full backface-hidden rotateY-180 flex flex-col items-center justify-center",
-            cardColors[type]
+            cardColors[card.value]
           )}
         >
           <CardContent className="flex flex-col items-center justify-center h-full gap-2">
-            <span className="text-6xl">{cardIcons[type]}</span>
-            <span className="text-xl font-bold capitalize">{type}</span>
+            <span className="text-6xl">{cardIcons[card.value]}</span>
+            <span className="text-xl font-bold capitalize">{card.value}</span>
+            <span className="text-xs text-gray-500">#{card.id.slice(0, 4)}</span>
           </CardContent>
         </Card>
       </motion.div>

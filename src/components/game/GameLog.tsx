@@ -50,8 +50,8 @@ export const GameLog: React.FC<GameLogProps> = ({ logs }) => {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm text-muted-foreground mt-1">
-                    <span>You: {log.playerCard}</span>
-                    <span>Opponent: {log.opponentCard}</span>
+                    <span>You: {log.playerCard.value}</span>
+                    <span>Opponent: {log.opponentCard.value}</span>
                   </div>
                 </li>
               ))}
