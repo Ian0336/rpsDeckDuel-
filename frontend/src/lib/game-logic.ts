@@ -1,4 +1,5 @@
 import { CardType, ElementType } from "@/components/game/GameCard";
+import { Card, GameState, initialGameState } from "@/types/game";
 
 // 生成唯一ID的輔助函數
 function generateId(): string {
@@ -23,12 +24,16 @@ function calculateEffectivePoints(card: CardType, opponentCard: CardType): numbe
   
   // 相生關係（距離為1）：點數加倍
   if (distance === 4) {
-    return card.points * 2;
+    return card.points + Math.ceil(opponentCard.points / 3) * 2;
   }
   
   // 相剋關係（距離為2）：點數減半
   if (distance === 3) {
-    return Math.floor(card.points / 2);
+    return Math.max(card.points - Math.ceil(opponentCard.points / 3) * 2, 0);
+  }
+
+  if (distance === 0) {
+    return card.points + opponentCard.points;
   }
   
   // 其他關係：點數不變
@@ -143,4 +148,26 @@ const elementNameMap = {
   water: "水",
   fire: "火",
   earth: "土"
+};
+
+// 修改生成玩家牌组的函数，如果已有牌组则使用现有牌组
+export const setupGame = (existingPlayerDeck?: Card[]): GameState => {
+  const playerDeck = existingPlayerDeck || (getInitialDeck() as Card[]);
+  const computerDeck = getInitialDeck() as Card[];
+  
+  return {
+    ...initialGameState,
+    playerDeck,
+    computerDeck,
+    gameStatus: 'playing',
+  };
+};
+
+// 添加这些辅助函数
+export const generatePlayerDeck = (): Card[] => {
+  return getInitialDeck() as Card[];
+};
+
+export const generateComputerDeck = (): Card[] => {
+  return getInitialDeck() as Card[];
 }; 

@@ -172,7 +172,7 @@ export const PlayerDeck: React.FC<PlayerDeckProps> = ({
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>You selected: <strong>{selectedCard.value}</strong> <span className="text-xs opacity-70">#{selectedCard.id.slice(0, 4)}</span></span>
+              <span>You selected: <strong>{selectedCard.points}</strong> <span className="text-xs opacity-70">#{selectedCard.id.slice(0, 4)}</span></span>
             </div>
           ) : (
             <div className="flex items-center gap-2 animate-pulse">

@@ -9,12 +9,14 @@ import { CardType } from "@/components/game/GameCard";
 import { determineWinner, getInitialDeck, updateValueTransfer } from "@/lib/game-logic";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useGameContext } from "@/contexts/GameContext";
+import { Card } from "@/types/game";
 
 export default function GamePage() {
   const router = useRouter();
+  const { gameState, playerDeck, setPlayerDeck, startGame, playCard, resetGame } = useGameContext();
   
   // 遊戲狀態
-  const [playerDeck, setPlayerDeck] = useState<CardType[]>(getInitialDeck());
   const [opponentDeck, setOpponentDeck] = useState<CardType[]>(getInitialDeck());
   const [playerSelectedCard, setPlayerSelectedCard] = useState<CardType | null>(null);
   const [opponentSelectedCard, setOpponentSelectedCard] = useState<CardType | null>(null);
@@ -130,7 +132,7 @@ export default function GamePage() {
 
   // 開始新遊戲
   const handleNewGame = () => {
-    setPlayerDeck(getInitialDeck());
+    setPlayerDeck(getInitialDeck() as Card[]);
     setOpponentDeck(getInitialDeck());
     setPlayerSelectedCard(null);
     setOpponentSelectedCard(null);
@@ -149,6 +151,13 @@ export default function GamePage() {
     router.push('/');
   };
 
+  useEffect(() => {
+    // 只有当游戏未开始且玩家牌组已存在时才开始游戏
+    if (gameState.gameStatus === 'idle' && playerDeck.length > 0) {
+      startGame();
+    }
+  }, [gameState.gameStatus, playerDeck, startGame]);
+
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
       {/* 固定在頂部的對手區域 */}
@@ -161,7 +170,7 @@ export default function GamePage() {
       </div>
 
       {/* 中央浮動狀態顯示 */}
-      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+      <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none">
         <AnimatePresence>
           {gameResult && gamePhase === "result" && (
             <motion.div 
@@ -175,7 +184,7 @@ export default function GamePage() {
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.5 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              transition={{ type: "tween", stiffness: 400, damping: 10 }}
             >
               {gameResult === "win" 
                 ? `你贏了！ ${playerEffectivePoints} vs ${opponentEffectivePoints}` 
