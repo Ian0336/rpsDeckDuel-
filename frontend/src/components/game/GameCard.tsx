@@ -3,11 +3,12 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-export type CardValue = "rock" | "paper" | "scissors";
+export type ElementType = "metal" | "wood" | "water" | "fire" | "earth";
 
 export interface CardType {
   id: string;
-  value: CardValue;
+  element: ElementType;
+  points: number;
 }
 
 interface GameCardProps {
@@ -18,16 +19,28 @@ interface GameCardProps {
   className?: string;
 }
 
-const cardIcons = {
-  rock: "✊",
-  paper: "✋",
-  scissors: "✌️",
+const elementIcons = {
+  metal: "🔧",
+  wood: "🌳",
+  water: "💧",
+  fire: "🔥",
+  earth: "🪨",
 };
 
-const cardColors = {
-  rock: "bg-red-100 dark:bg-red-900",
-  paper: "bg-blue-100 dark:bg-blue-900",
-  scissors: "bg-yellow-100 dark:bg-yellow-900",
+const elementColors = {
+  metal: "bg-gray-100 dark:bg-gray-800",
+  wood: "bg-green-100 dark:bg-green-900",
+  water: "bg-blue-100 dark:bg-blue-900",
+  fire: "bg-red-100 dark:bg-red-900",
+  earth: "bg-yellow-100 dark:bg-yellow-900",
+};
+
+const elementNames = {
+  metal: "金",
+  wood: "木",
+  water: "水",
+  fire: "火",
+  earth: "土",
 };
 
 export const GameCard: React.FC<GameCardProps> = ({
@@ -69,12 +82,16 @@ export const GameCard: React.FC<GameCardProps> = ({
         <Card
           className={cn(
             "absolute w-full h-full backface-hidden rotateY-180 flex flex-col items-center justify-center",
-            cardColors[card.value]
+            elementColors[card.element]
           )}
         >
           <CardContent className="flex flex-col items-center justify-center h-full gap-2">
-            <span className="text-6xl">{cardIcons[card.value]}</span>
-            <span className="text-xl font-bold capitalize">{card.value}</span>
+            <span className="text-6xl">{elementIcons[card.element]}</span>
+            <span className="text-xl font-bold capitalize">{elementNames[card.element]}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-lg font-bold text-purple-600">{card.points}</span>
+              <span className="text-xs text-gray-500">點</span>
+            </div>
             <span className="text-xs text-gray-500">#{card.id.slice(0, 4)}</span>
           </CardContent>
         </Card>

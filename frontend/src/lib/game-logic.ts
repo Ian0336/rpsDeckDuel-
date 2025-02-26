@@ -1,39 +1,67 @@
-import { CardType, CardValue } from "@/components/game/GameCard";
+import { CardType, ElementType } from "@/components/game/GameCard";
 
 // 生成唯一ID的輔助函數
 function generateId(): string {
   return Math.random().toString(36).substring(2, 10);
 }
 
+// 五行元素的順序：木 → 火 → 土 → 金 → 水 → 木
+const elementCycle: ElementType[] = ["wood", "fire", "earth", "metal", "water"];
+
+// 計算兩個元素之間的順時針距離
+function getClockwiseDistance(fromElement: ElementType, toElement: ElementType): number {
+  const fromIndex = elementCycle.indexOf(fromElement);
+  const toIndex = elementCycle.indexOf(toElement);
+  
+  // 計算順時針距離
+  return (toIndex - fromIndex + elementCycle.length) % elementCycle.length;
+}
+
+// 根據五行相生相剋規則計算實際點數
+function calculateEffectivePoints(card: CardType, opponentCard: CardType): number {
+  const distance = getClockwiseDistance(card.element, opponentCard.element);
+  
+  // 相生關係（距離為1）：點數加倍
+  if (distance === 4) {
+    return card.points * 2;
+  }
+  
+  // 相剋關係（距離為2）：點數減半
+  if (distance === 3) {
+    return Math.floor(card.points / 2);
+  }
+  
+  // 其他關係：點數不變
+  return card.points;
+}
+
 export function determineWinner(
   playerCard: CardType,
   opponentCard: CardType
-): "win" | "lose" | "draw" {
-  if (playerCard.value === opponentCard.value) {
-    return "draw";
+): { result: "win" | "lose" | "draw"; playerEffectivePoints: number; opponentEffectivePoints: number } {
+  const playerEffectivePoints = calculateEffectivePoints(playerCard, opponentCard);
+  const opponentEffectivePoints = calculateEffectivePoints(opponentCard, playerCard);
+  
+  if (playerEffectivePoints > opponentEffectivePoints) {
+    return { result: "win", playerEffectivePoints, opponentEffectivePoints };
+  } else if (playerEffectivePoints < opponentEffectivePoints) {
+    return { result: "lose", playerEffectivePoints, opponentEffectivePoints };
+  } else {
+    return { result: "draw", playerEffectivePoints, opponentEffectivePoints };
   }
-
-  if (
-    (playerCard.value === "rock" && opponentCard.value === "scissors") ||
-    (playerCard.value === "paper" && opponentCard.value === "rock") ||
-    (playerCard.value === "scissors" && opponentCard.value === "paper")
-  ) {
-    return "win";
-  }
-
-  return "lose";
 }
 
 export function getInitialDeck(): CardType[] {
-  // 創建初始牌組，每種卡牌3張，每張有唯一ID
-  const cardValues: CardValue[] = ["rock", "paper", "scissors"];
+  // 創建初始牌組，每種元素2張，每張有唯一ID，初始點數為1
+  const elements: ElementType[] = ["metal", "wood", "water", "fire", "earth"];
   const deck: CardType[] = [];
   
-  cardValues.forEach(value => {
-    for (let i = 0; i < 3; i++) {
+  elements.forEach(element => {
+    for (let i = 0; i < 2; i++) {
       deck.push({
-        id: `${value}-${generateId()}`,
-        value: value
+        id: `${element}-${generateId()}`,
+        element: element,
+        points: 1
       });
     }
   });
@@ -41,10 +69,11 @@ export function getInitialDeck(): CardType[] {
   return deck;
 }
 
-export function transferCard(
+export function updateValueTransfer(
   fromDeck: CardType[],
   toDeck: CardType[],
-  cardToTransfer: CardType
+  cardToTransfer: CardType,
+  myCard: CardType,
 ): { updatedFromDeck: CardType[]; updatedToDeck: CardType[] } {
   // 根據ID找到要轉移的卡牌
   const cardIndex = fromDeck.findIndex(card => card.id === cardToTransfer.id);
@@ -61,8 +90,57 @@ export function transferCard(
   // 從源牌組中移除卡牌
   const [removedCard] = updatedFromDeck.splice(cardIndex, 1);
   
-  // 將卡牌添加到目標牌組
-  updatedToDeck.push(removedCard);
+  // 如果卡牌是贏家，增加點數；如果是輸家，重置點數為1
+  const updatedCard = {
+    ...removedCard,
+    points: 1
+  };
+  
+  // 將更新後的卡牌添加到目標牌組
+  updatedToDeck.push(updatedCard);
+
+  // update to deck (winner card)
+  const myCardIndex = toDeck.findIndex(card => card.id === myCard.id);
+  if (myCardIndex !== -1) {
+    updatedToDeck[myCardIndex] = {
+      ...myCard,
+      points: myCard.points + 1
+    };
+  }
   
   return { updatedFromDeck, updatedToDeck };
-} 
+}
+
+// 獲取元素關係描述
+export function getElementRelationship(fromElement: ElementType, toElement: ElementType): {
+  relationship: "generates" | "restricts" | "neutral";
+  description: string;
+} {
+  const distance = getClockwiseDistance(fromElement, toElement);
+  
+  if (distance === 1) {
+    return {
+      relationship: "generates",
+      description: `${elementNameMap[fromElement]}生${elementNameMap[toElement]}，效果加倍`
+    };
+  } else if (distance === 2) {
+    return {
+      relationship: "restricts",
+      description: `${elementNameMap[fromElement]}克${elementNameMap[toElement]}，效果減半`
+    };
+  } else {
+    return {
+      relationship: "neutral",
+      description: "無特殊關係"
+    };
+  }
+}
+
+// 中文元素名稱映射
+const elementNameMap = {
+  metal: "金",
+  wood: "木",
+  water: "水",
+  fire: "火",
+  earth: "土"
+}; 

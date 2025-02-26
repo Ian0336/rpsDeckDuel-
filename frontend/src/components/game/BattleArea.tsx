@@ -1,12 +1,15 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GameCard, CardType } from "@/components/game/GameCard";
+import { getElementRelationship } from "@/lib/game-logic";
 
 interface BattleAreaProps {
   playerCard: CardType | null;
   opponentCard: CardType | null;
   gamePhase: "selection" | "reveal" | "result";
   gameResult: "win" | "lose" | "draw" | null;
+  playerEffectivePoints?: number;
+  opponentEffectivePoints?: number;
 }
 
 export const BattleArea: React.FC<BattleAreaProps> = ({
@@ -14,7 +17,18 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
   opponentCard,
   gamePhase,
   gameResult,
+  playerEffectivePoints,
+  opponentEffectivePoints,
 }) => {
+  // 計算元素關係
+  const playerRelationship = playerCard && opponentCard && gamePhase !== "selection" 
+    ? getElementRelationship(playerCard.element, opponentCard.element)
+    : null;
+    
+  const opponentRelationship = playerCard && opponentCard && gamePhase !== "selection"
+    ? getElementRelationship(opponentCard.element, playerCard.element)
+    : null;
+
   return (
     <div className="relative h-64 w-full flex items-center justify-center">
       {/* 玩家選擇的卡 */}
@@ -48,11 +62,43 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
               damping: 20 
             }}
           >
-            <GameCard
-              card={playerCard}
-              isFlipped={gamePhase !== "selection"}
-              className={`${gameResult === "win" ? "ring-green-500 ring-4" : gameResult === "lose" ? "ring-red-500 ring-4" : ""}`}
-            />
+            <div className="relative">
+              <GameCard
+                card={playerCard}
+                isFlipped={gamePhase !== "selection"}
+                className={`${gameResult === "win" ? "ring-green-500 ring-4" : gameResult === "lose" ? "ring-red-500 ring-4" : ""}`}
+              />
+              
+              {/* 有效點數顯示 */}
+              {gamePhase === "result" && playerEffectivePoints !== undefined && (
+                <motion.div
+                  className="absolute -top-4 -right-4 bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-lg"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.5, type: "spring" }}
+                >
+                  {playerEffectivePoints}
+                </motion.div>
+              )}
+              
+              {/* 元素關係指示器 */}
+              {playerRelationship && gamePhase !== "selection" && (
+                <motion.div
+                  className={`absolute -bottom-8 left-0 right-0 text-center text-xs font-medium px-2 py-1 rounded-full ${
+                    playerRelationship.relationship === "generates" 
+                      ? "bg-green-100 text-green-800" 
+                      : playerRelationship.relationship === "restricts"
+                      ? "bg-red-100 text-red-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  {playerRelationship.description}
+                </motion.div>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -88,11 +134,43 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
               damping: 20 
             }}
           >
-            <GameCard
-              card={opponentCard}
-              isFlipped={gamePhase !== "selection"}
-              className={gameResult === "lose" ? "ring-4 ring-green-500" : gameResult === "win" ? "ring-4 ring-red-500" : ""}
-            />
+            <div className="relative">
+              <GameCard
+                card={opponentCard}
+                isFlipped={gamePhase !== "selection"}
+                className={gameResult === "lose" ? "ring-4 ring-green-500" : gameResult === "win" ? "ring-4 ring-red-500" : ""}
+              />
+              
+              {/* 有效點數顯示 */}
+              {gamePhase === "result" && opponentEffectivePoints !== undefined && (
+                <motion.div
+                  className="absolute -top-4 -right-4 bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-lg"
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.5, type: "spring" }}
+                >
+                  {opponentEffectivePoints}
+                </motion.div>
+              )}
+              
+              {/* 元素關係指示器 */}
+              {opponentRelationship && gamePhase !== "selection" && (
+                <motion.div
+                  className={`absolute -top-8 left-0 right-0 text-center text-xs font-medium px-2 py-1 rounded-full ${
+                    opponentRelationship.relationship === "generates" 
+                      ? "bg-green-100 text-green-800" 
+                      : opponentRelationship.relationship === "restricts"
+                      ? "bg-red-100 text-red-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  {opponentRelationship.description}
+                </motion.div>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
