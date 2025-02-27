@@ -13,9 +13,9 @@ import { useGameContext } from "@/contexts/GameContext";
 
 export default function GamePage() {
   const router = useRouter();
-  const { gameState, playerDeck, setPlayerDeck, startGame, playCard, resetGame, selectedGameDeck } = useGameContext();
+  const { gameState, playerDeck, setPlayerDeck, startGame, playCard, resetGame } = useGameContext();
   
-  // Game state
+  // 遊戲狀態
   const [opponentDeck, setOpponentDeck] = useState<CardType[]>(getInitialDeck());
   const [playerSelectedCard, setPlayerSelectedCard] = useState<CardType | null>(null);
   const [opponentSelectedCard, setOpponentSelectedCard] = useState<CardType | null>(null);
@@ -24,70 +24,39 @@ export default function GamePage() {
   const [opponentEffectivePoints, setOpponentEffectivePoints] = useState<number | undefined>(undefined);
   const [roundNumber, setRoundNumber] = useState(1);
   const [gameLog, setGameLog] = useState<GameLogEntry[]>([]);
-  const [gamePhase, setGamePhase] = useState<"selection" | "reveal" | "result" | "gameEnd">("selection");
+  const [gamePhase, setGamePhase] = useState<"selection" | "reveal" | "result">("selection");
   const [isGameActive, setIsGameActive] = useState(true);
   
-  // Additional game states
-  const [playerGameDeck, setPlayerGameDeck] = useState<CardType[]>([]);
-  const [opponentGameDeck, setOpponentGameDeck] = useState<CardType[]>([]);
-  const [playerUsedCards, setPlayerUsedCards] = useState<CardType[]>([]);
-  const [opponentUsedCards, setOpponentUsedCards] = useState<CardType[]>([]);
-  const [roundResults, setRoundResults] = useState<Array<{
-    result: "win" | "lose" | "draw",
-    playerCard: CardType,
-    opponentCard: CardType
-  }>>([]);
-  const [finalGameResult, setFinalGameResult] = useState<"win" | "lose" | "draw" | null>(null);
-  
-  // UI states
+  // UI 狀態
   const [showGameLog, setShowGameLog] = useState(false);
   const [showControls, setShowControls] = useState(false);
   
-  // Initialize game deck
-  useEffect(() => {
-    if (gameState.gameStatus === 'idle' && playerDeck.length > 0) {
-      // Randomly select 7 cards as opponent's game deck
-      const shuffledOpponentDeck = [...opponentDeck].sort(() => Math.random() - 0.5);
-      const selectedOpponentCards = shuffledOpponentDeck.slice(0, 7);
-      setOpponentGameDeck(selectedOpponentCards);
-      
-      setPlayerGameDeck(selectedGameDeck);
-      
-      startGame();
-    }
-  }, [gameState.gameStatus, playerDeck, opponentDeck, startGame]);
-  
-  // AI opponent logic
+  // AI 對手邏輯
   useEffect(() => {
     if (isGameActive && gamePhase === "selection" && playerSelectedCard) {
-      // Simulate opponent card selection (after short delay)
+      // 模擬對手選擇卡片（短暫延遲後）
       const timer = setTimeout(() => {
-        const availableCards = opponentGameDeck.filter(card => 
-          !opponentUsedCards.some(usedCard => usedCard.id === card.id)
-        );
-        
-        if (availableCards.length > 0) {
-          const randomIndex = Math.floor(Math.random() * availableCards.length);
-          setOpponentSelectedCard(availableCards[randomIndex]);
-          setGamePhase("reveal");
-        }
+        const availableCards = opponentDeck;
+        const randomIndex = Math.floor(Math.random() * availableCards.length);
+        setOpponentSelectedCard(availableCards[randomIndex]);
+        setGamePhase("reveal");
       }, 1000);
 
       return () => clearTimeout(timer);
     }
-  }, [isGameActive, gamePhase, playerSelectedCard, opponentGameDeck, opponentUsedCards]);
+  }, [isGameActive, gamePhase, playerSelectedCard, opponentDeck]);
 
-  // Handle round results
+  // 處理回合結果
   useEffect(() => {
     if (gamePhase === "reveal" && playerSelectedCard && opponentSelectedCard) {
-      // Short delay to determine winner (to show cards)
+      // 短暫延遲後確定勝者（以顯示卡片）
       const timer = setTimeout(() => {
         const battleResult = determineWinner(playerSelectedCard, opponentSelectedCard);
         setGameResult(battleResult.result);
         setPlayerEffectivePoints(battleResult.playerEffectivePoints);
         setOpponentEffectivePoints(battleResult.opponentEffectivePoints);
         
-        // Add to game log
+        // 添加到遊戲日誌
         setGameLog((prev) => [
           ...prev,
           {
@@ -100,16 +69,6 @@ export default function GamePage() {
           },
         ]);
         
-        // Add to round results
-        setRoundResults(prev => [
-          ...prev,
-          {
-            result: battleResult.result,
-            playerCard: playerSelectedCard,
-            opponentCard: opponentSelectedCard
-          }
-        ]);
-        
         setGamePhase("result");
       }, 1500);
 
@@ -117,69 +76,38 @@ export default function GamePage() {
     }
   }, [gamePhase, playerSelectedCard, opponentSelectedCard, roundNumber]);
 
-  // Handle round end and game end
+  // 處理卡片轉移
   useEffect(() => {
     if (gamePhase === "result" && playerSelectedCard && opponentSelectedCard && gameResult) {
+      // 根據結果轉移卡片
       const timer = setTimeout(() => {
-        // Add used cards to used list
-        if (playerSelectedCard) {
-          setPlayerUsedCards(prev => [...prev, playerSelectedCard]);
+        if (gameResult === "win") {
+          // 玩家獲勝，獲得對手的卡片
+          const { updatedFromDeck, updatedToDeck } = updateValueTransfer(
+            opponentDeck,
+            playerDeck,
+            opponentSelectedCard,
+            playerSelectedCard
+          );
+          setOpponentDeck(updatedFromDeck);
+          setPlayerDeck(updatedToDeck);
+        } else if (gameResult === "lose") {
+          // 玩家失敗，給予卡片給對手
+          const { updatedFromDeck, updatedToDeck } = updateValueTransfer(
+            playerDeck,
+            opponentDeck,
+            playerSelectedCard,
+            opponentSelectedCard
+          );
+          setPlayerDeck(updatedFromDeck);
+          setOpponentDeck(updatedToDeck);
         }
         
-        if (opponentSelectedCard) {
-          setOpponentUsedCards(prev => [...prev, opponentSelectedCard]);
-        }
-        
-        // Check if reached 5 rounds
-        if (roundNumber >= 5) {
-          // Calculate final result
-          const wins = roundResults.filter(r => r.result === "win").length;
-          const losses = roundResults.filter(r => r.result === "lose").length;
-          
-          let finalResult: "win" | "lose" | "draw" = "draw";
-          if (wins > losses) {
-            finalResult = "win";
-          } else if (losses > wins) {
-            finalResult = "lose";
-          }
-          
-          setFinalGameResult(finalResult);
-          
-          // Transfer cards based on final result
-          if (finalResult === "win") {
-            // Player wins, gets some opponent cards
-            const opponentCardsToTransfer = roundResults
-              .filter(r => r.result === "win")
-              .map(r => r.opponentCard);
-              
-            // Update decks
-            const newPlayerDeck = [...playerDeck, ...opponentCardsToTransfer] as CardType[];
-            const newOpponentDeck = opponentDeck.filter(card => 
-              !opponentCardsToTransfer.some(c => c.id === card.id)
-            );
-            
-            setPlayerDeck(newPlayerDeck);
-            setOpponentDeck(newOpponentDeck);
-          } else if (finalResult === "lose") {
-            // Player loses, gives cards to opponent
-            const playerCardsToTransfer = roundResults
-              .filter(r => r.result === "lose")
-              .map(r => r.playerCard);
-              
-            // Update decks
-            const newOpponentDeck = [...opponentDeck, ...playerCardsToTransfer];
-            const newPlayerDeck = playerDeck.filter(card => 
-              !playerCardsToTransfer.some(c => c.id === card.id)
-            ) as CardType[];
-            
-            setPlayerDeck(newPlayerDeck);
-            setOpponentDeck(newOpponentDeck);
-          }
-          
-          setGamePhase("gameEnd");
+        // 檢查遊戲是否結束
+        if (playerDeck.length === 0 || opponentDeck.length === 0) {
           setIsGameActive(false);
         } else {
-          // Prepare next round
+          // 準備下一回合
           setRoundNumber(prev => prev + 1);
           setPlayerSelectedCard(null);
           setOpponentSelectedCard(null);
@@ -192,26 +120,19 @@ export default function GamePage() {
       
       return () => clearTimeout(timer);
     }
-  }, [gamePhase, gameResult, playerSelectedCard, opponentSelectedCard, playerDeck, opponentDeck, roundNumber, roundResults]);
+  }, [gamePhase, gameResult, playerSelectedCard, opponentSelectedCard, playerDeck, opponentDeck]);
 
-  // Handle player card selection
+  // 處理玩家選擇卡片
   const handleCardSelect = (card: CardType) => {
     if (gamePhase === "selection" && !playerSelectedCard) {
-      // Check if card is already used
-      const isCardUsed = playerUsedCards.some(usedCard => usedCard.id === card.id);
-      
-      // Check if card is in game deck
-      const isCardInGameDeck = playerGameDeck.some(deckCard => deckCard.id === card.id);
-      
-      if (isCardInGameDeck && !isCardUsed) {
-        setPlayerSelectedCard(card);
-      }
+      setPlayerSelectedCard(card);
     }
   };
 
-  // Start new game
+  // 開始新遊戲
   const handleNewGame = () => {
-    // Reset game state
+    setPlayerDeck(getInitialDeck());
+    setOpponentDeck(getInitialDeck());
     setPlayerSelectedCard(null);
     setOpponentSelectedCard(null);
     setGameResult(null);
@@ -222,36 +143,32 @@ export default function GamePage() {
     setGamePhase("selection");
     setIsGameActive(true);
     setShowControls(false);
-    
-    // Reset additional game states
-    setPlayerUsedCards([]);
-    setOpponentUsedCards([]);
-    setRoundResults([]);
-    setFinalGameResult(null);
-    
-    // Return to deck selection to choose new cards
-    router.push('/deck-selection');
   };
 
-  // Return to matchmaking
+  // 返回配對列表
   const handleReturnToMatchmaking = () => {
     router.push('/');
   };
 
+  useEffect(() => {
+    // 只有当游戏未开始且玩家牌组已存在时才开始游戏
+    if (gameState.gameStatus === 'idle' && playerDeck.length > 0) {
+      startGame();
+    }
+  }, [gameState.gameStatus, playerDeck, startGame]);
+
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      {/* Fixed opponent area at top */}
+      {/* 固定在頂部的對手區域 */}
       <div className="w-full bg-opacity-0 border-b border-red-100 p-4 sticky top-0 z-10">
         <PlayerDeck
-          cards={gamePhase === "gameEnd" ? opponentDeck : opponentGameDeck.filter(card => 
-            !opponentUsedCards.some(usedCard => usedCard.id === card.id)
-          )}
+          cards={opponentDeck}
           isPlayer={false}
           selectedCard={opponentSelectedCard}
         />
       </div>
 
-      {/* Centered floating status display */}
+      {/* 中央浮動狀態顯示 */}
       <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none">
         <AnimatePresence>
           {gameResult && gamePhase === "result" && (
@@ -269,38 +186,16 @@ export default function GamePage() {
               transition={{ type: "tween", stiffness: 400, damping: 10 }}
             >
               {gameResult === "win" 
-                ? `You won! ${playerEffectivePoints} vs ${opponentEffectivePoints}` 
+                ? `你贏了！ ${playerEffectivePoints} vs ${opponentEffectivePoints}` 
                 : gameResult === "lose" 
-                ? `You lost! ${playerEffectivePoints} vs ${opponentEffectivePoints}` 
-                : `Draw! ${playerEffectivePoints} vs ${opponentEffectivePoints}`}
-            </motion.div>
-          )}
-          
-          {finalGameResult && gamePhase === "gameEnd" && (
-            <motion.div 
-              className={`px-6 py-3 rounded-full font-bold text-lg shadow-lg ${
-                finalGameResult === "win" 
-                  ? "bg-green-100 text-green-700" 
-                  : finalGameResult === "lose" 
-                  ? "bg-red-100 text-red-700" 
-                  : "bg-yellow-100 text-yellow-700"
-              }`}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              transition={{ type: "tween", stiffness: 400, damping: 10 }}
-            >
-              {finalGameResult === "win" 
-                ? `Game Over! You won!` 
-                : finalGameResult === "lose" 
-                ? `Game Over! You lost!` 
-                : `Game Over! Draw!`}
+                ? `你輸了！ ${playerEffectivePoints} vs ${opponentEffectivePoints}` 
+                : `平局！ ${playerEffectivePoints} vs ${opponentEffectivePoints}`}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Round info - Fixed between opponent and player areas */}
+      {/* 回合信息 - 固定在對手和玩家區域之間 */}
       <div className="flex justify-center items-center py-4">
         <motion.div 
           className="px-4 py-2 rounded-full bg-blue-50 text-blue-700 font-medium shadow-md"
@@ -308,19 +203,11 @@ export default function GamePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
         >
-          Round {roundNumber}/5 - {
-            gamePhase === "selection" 
-              ? "Select Card" 
-              : gamePhase === "reveal" 
-              ? "Battle in progress..." 
-              : gamePhase === "result" 
-              ? "Resolving..." 
-              : "Game Over"
-          }
+          回合 {roundNumber} - {gamePhase === "selection" ? "選擇卡片" : gamePhase === "reveal" ? "對決中..." : "結算中..."}
         </motion.div>
       </div>
 
-      {/* Central battle area */}
+      {/* 中央對決區域 */}
       <div className="flex-1 flex items-center justify-center">
         <BattleArea
           playerCard={playerSelectedCard}
@@ -332,7 +219,7 @@ export default function GamePage() {
         />
       </div>
 
-      {/* Side control panel - Collapsible */}
+      {/* 側邊控制面板 - 可折疊 */}
       <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-20 flex flex-col gap-2">
         <motion.button
           className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors"
@@ -361,7 +248,7 @@ export default function GamePage() {
         </motion.button>
       </div>
 
-      {/* Control panel */}
+      {/* 控制面板 */}
       <AnimatePresence>
         {showControls && (
           <motion.div 
@@ -372,7 +259,7 @@ export default function GamePage() {
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg">Game Controls</h3>
+              <h3 className="font-bold text-lg">遊戲控制</h3>
               <Button 
                 variant="ghost"
                 size="sm"
@@ -391,7 +278,7 @@ export default function GamePage() {
                 className="w-full"
                 onClick={handleNewGame}
               >
-                Start New Game
+                開始新遊戲
               </Button>
               
               <Button 
@@ -399,22 +286,12 @@ export default function GamePage() {
                 className="w-full"
                 onClick={handleReturnToMatchmaking}
               >
-                Return to Matchmaking
+                返回配對列表
               </Button>
               
-              {gamePhase === "gameEnd" && (
-                <div className={`p-3 rounded-md mt-4 text-center font-bold ${
-                  finalGameResult === "win" 
-                    ? "bg-green-100 text-green-700" 
-                    : finalGameResult === "lose" 
-                    ? "bg-red-100 text-red-700" 
-                    : "bg-yellow-100 text-yellow-700"
-                }`}>
-                  {finalGameResult === "win" 
-                    ? "You won! You got opponent's cards." 
-                    : finalGameResult === "lose" 
-                    ? "You lost! You lost some cards." 
-                    : "Draw! No cards transferred."}
+              {!isGameActive && (
+                <div className={`p-3 rounded-md mt-4 text-center font-bold ${playerDeck.length === 0 ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                  {playerDeck.length === 0 ? "你輸了！所有卡片都被對手奪走了。" : "你贏了！奪走了對手所有的卡片。"}
                 </div>
               )}
             </div>
@@ -422,7 +299,7 @@ export default function GamePage() {
         )}
       </AnimatePresence>
 
-      {/* Game log */}
+      {/* 遊戲日誌 */}
       <AnimatePresence>
         {showGameLog && (
           <motion.div 
@@ -433,7 +310,7 @@ export default function GamePage() {
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg">Game Log</h3>
+              <h3 className="font-bold text-lg">遊戲日誌</h3>
               <Button 
                 variant="ghost"
                 size="sm"
@@ -454,15 +331,13 @@ export default function GamePage() {
         )}
       </AnimatePresence>
 
-      {/* Middle spacing */}
+      {/* 中間填充空間 */}
       <div className="flex-1"></div>
 
-      {/* Fixed player area at bottom */}
+      {/* 固定在底部的玩家區域 */}
       <div className="w-full bg-blue-50 bg-opacity-30 border-t border-blue-100 p-4 sticky bottom-0 z-10">
         <PlayerDeck
-          cards={gamePhase === "gameEnd" ? playerDeck : playerGameDeck.filter(card => 
-            !playerUsedCards.some(usedCard => usedCard.id === card.id)
-          )}
+          cards={playerDeck}
           isPlayer={true}
           onCardSelect={handleCardSelect}
           selectedCard={playerSelectedCard}

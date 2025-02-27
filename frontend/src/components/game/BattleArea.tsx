@@ -6,7 +6,7 @@ import { getElementRelationship } from "@/lib/game-logic";
 interface BattleAreaProps {
   playerCard: CardType | null;
   opponentCard: CardType | null;
-  gamePhase: "selection" | "reveal" | "result";
+  gamePhase: "selection" | "reveal" | "result" | "gameEnd";
   gameResult: "win" | "lose" | "draw" | null;
   playerEffectivePoints?: number;
   opponentEffectivePoints?: number;
@@ -20,7 +20,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
   playerEffectivePoints,
   opponentEffectivePoints,
 }) => {
-  // 計算元素關係
+  // Calculate element relationships
   const playerRelationship = playerCard && opponentCard && gamePhase !== "selection" 
     ? getElementRelationship(playerCard.element, opponentCard.element)
     : null;
@@ -31,7 +31,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
 
   return (
     <div className="relative h-64 w-full flex items-center justify-center">
-      {/* 玩家選擇的卡 */}
+      {/* Player's selected card */}
       <AnimatePresence>
         {playerCard && (
           <motion.div
@@ -69,7 +69,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
                 className={`${gameResult === "win" ? "ring-green-500 ring-4" : gameResult === "lose" ? "ring-red-500 ring-4" : ""}`}
               />
               
-              {/* 有效點數顯示 */}
+              {/* Effective points display */}
               {gamePhase === "result" && playerEffectivePoints !== undefined && (
                 <motion.div
                   className="absolute -top-4 -right-4 bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-lg"
@@ -81,7 +81,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
                 </motion.div>
               )}
               
-              {/* 元素關係指示器 */}
+              {/* Element relationship indicator */}
               {playerRelationship && gamePhase !== "selection" && (
                 <motion.div
                   className={`absolute -bottom-8 left-0 right-0 text-center text-xs font-medium px-2 py-1 rounded-full ${
@@ -103,7 +103,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 對手選擇的卡 */}
+      {/* Opponent's selected card */}
       <AnimatePresence>
         {opponentCard && (
           <motion.div
@@ -141,7 +141,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
                 className={gameResult === "lose" ? "ring-4 ring-green-500" : gameResult === "win" ? "ring-4 ring-red-500" : ""}
               />
               
-              {/* 有效點數顯示 */}
+              {/* Effective points display */}
               {gamePhase === "result" && opponentEffectivePoints !== undefined && (
                 <motion.div
                   className="absolute -top-4 -right-4 bg-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-lg"
@@ -153,7 +153,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
                 </motion.div>
               )}
               
-              {/* 元素關係指示器 */}
+              {/* Element relationship indicator */}
               {opponentRelationship && gamePhase !== "selection" && (
                 <motion.div
                   className={`absolute -top-8 left-0 right-0 text-center text-xs font-medium px-2 py-1 rounded-full ${
@@ -175,7 +175,7 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 對決指示器 */}
+      {/* Battle indicator */}
       {playerCard && opponentCard && gamePhase !== "selection" && (
         <motion.div
           className="absolute z-10"
@@ -201,4 +201,4 @@ export const BattleArea: React.FC<BattleAreaProps> = ({
       )}
     </div>
   );
-}; 
+};

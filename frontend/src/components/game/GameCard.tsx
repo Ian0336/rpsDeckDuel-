@@ -3,13 +3,11 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-export type ElementType = "metal" | "wood" | "water" | "fire" | "earth";
-
-export interface CardType {
+export type CardType = {
   id: string;
-  element: ElementType;
-  points: number;
-}
+  element: "metal" | "wood" | "water" | "fire" | "earth";
+  point: number;
+};
 
 interface GameCardProps {
   card: CardType;
@@ -36,11 +34,11 @@ const elementColors = {
 };
 
 const elementNames = {
-  metal: "金",
-  wood: "木",
-  water: "水",
-  fire: "火",
-  earth: "土",
+  metal: "Metal",
+  wood: "Wood", 
+  water: "Water",
+  fire: "Fire",
+  earth: "Earth",
 };
 
 export const GameCard: React.FC<GameCardProps> = ({
@@ -89,8 +87,8 @@ export const GameCard: React.FC<GameCardProps> = ({
             <span className="text-6xl">{elementIcons[card.element]}</span>
             <span className="text-xl font-bold capitalize">{elementNames[card.element]}</span>
             <div className="flex items-center gap-1">
-              <span className="text-lg font-bold text-purple-600">{card.points}</span>
-              <span className="text-xs text-gray-500">點</span>
+              <span className="text-lg font-bold text-purple-600">{card.point}</span>
+              <span className="text-xs text-gray-500">pts</span>
             </div>
             <span className="text-xs text-gray-500">#{card.id.slice(0, 4)}</span>
           </CardContent>
@@ -98,4 +96,4 @@ export const GameCard: React.FC<GameCardProps> = ({
       </motion.div>
     </motion.div>
   );
-}; 
+};

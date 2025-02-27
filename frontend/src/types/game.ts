@@ -1,15 +1,10 @@
 // 创建游戏相关的类型定义
-export interface Card {
-  id: string;
-  element: ElementType;
-  points: number;
-}
-
+import { CardType } from "@/components/game/GameCard";
 export type ElementType = "metal" | "wood" | "water" | "fire" | "earth";
 
 export interface GameState {
-  playerDeck: Card[];
-  computerDeck: Card[];
+  playerDeck: CardType[];
+  computerDeck: CardType[];
   gameStatus: 'idle' | 'playing' | 'ended';
   currentPlayer: 'player' | 'computer';
   winner: 'player' | 'computer' | null;

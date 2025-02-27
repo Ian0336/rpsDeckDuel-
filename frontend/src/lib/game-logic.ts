@@ -1,43 +1,44 @@
-import { CardType, ElementType } from "@/components/game/GameCard";
-import { Card, GameState, initialGameState } from "@/types/game";
+import { CardType } from "@/components/game/GameCard";
+import { ElementType } from "@/types/game";
+import { GameState, initialGameState } from "@/types/game";
 
-// 生成唯一ID的輔助函數
+// Helper function to generate unique ID
 function generateId(): string {
   return Math.random().toString(36).substring(2, 10);
 }
 
-// 五行元素的順序：木 → 火 → 土 → 金 → 水 → 木
+// Five elements order: Wood → Fire → Earth → Metal → Water → Wood
 const elementCycle: ElementType[] = ["wood", "fire", "earth", "metal", "water"];
 
-// 計算兩個元素之間的順時針距離
+// Calculate clockwise distance between two elements
 function getClockwiseDistance(fromElement: ElementType, toElement: ElementType): number {
   const fromIndex = elementCycle.indexOf(fromElement);
   const toIndex = elementCycle.indexOf(toElement);
   
-  // 計算順時針距離
+  // Calculate clockwise distance
   return (toIndex - fromIndex + elementCycle.length) % elementCycle.length;
 }
 
-// 根據五行相生相剋規則計算實際點數
+// Calculate effective points based on the five elements generation/restriction rules
 function calculateEffectivePoints(card: CardType, opponentCard: CardType): number {
   const distance = getClockwiseDistance(card.element, opponentCard.element);
   
-  // 相生關係（距離為1）：點數加倍
+  // Generation relationship (distance of 1): double points
   if (distance === 4) {
-    return card.points + Math.ceil(opponentCard.points / 3) * 2;
+    return card.point + Math.ceil(opponentCard.point / 5) * 4;
   }
   
-  // 相剋關係（距離為2）：點數減半
+  // Restriction relationship (distance of 2): halve points
   if (distance === 3) {
-    return Math.max(card.points - Math.ceil(opponentCard.points / 3) * 2, 0);
+    return Math.max(card.point - Math.ceil(opponentCard.point / 5) * 4, 0);
   }
 
   if (distance === 0) {
-    return card.points + opponentCard.points;
+    return card.point + opponentCard.point;
   }
   
-  // 其他關係：點數不變
-  return card.points;
+  // Other relationships: points unchanged
+  return card.point;
 }
 
 export function determineWinner(
@@ -57,7 +58,7 @@ export function determineWinner(
 }
 
 export function getInitialDeck(): CardType[] {
-  // 創建初始牌組，每種元素2張，每張有唯一ID，初始點數為1
+  // Create initial deck with 2 cards of each element, unique IDs, initial points of 1
   const elements: ElementType[] = ["metal", "wood", "water", "fire", "earth"];
   const deck: CardType[] = [];
   
@@ -66,7 +67,7 @@ export function getInitialDeck(): CardType[] {
       deck.push({
         id: `${element}-${generateId()}`,
         element: element,
-        points: 1
+        point: 1
       });
     }
   });
@@ -80,28 +81,28 @@ export function updateValueTransfer(
   cardToTransfer: CardType,
   myCard: CardType,
 ): { updatedFromDeck: CardType[]; updatedToDeck: CardType[] } {
-  // 根據ID找到要轉移的卡牌
+  // Find card to transfer by ID
   const cardIndex = fromDeck.findIndex(card => card.id === cardToTransfer.id);
   
   if (cardIndex === -1) {
-    // 卡牌未找到，返回原始牌組
+    // Card not found, return original decks
     return { updatedFromDeck: [...fromDeck], updatedToDeck: [...toDeck] };
   }
   
-  // 創建新的牌組數組
+  // Create new deck arrays
   const updatedFromDeck = [...fromDeck];
   const updatedToDeck = [...toDeck];
   
-  // 從源牌組中移除卡牌
+  // Remove card from source deck
   const [removedCard] = updatedFromDeck.splice(cardIndex, 1);
   
-  // 如果卡牌是贏家，增加點數；如果是輸家，重置點數為1
+  // If card is winner, increase points; if loser, reset points to 1
   const updatedCard = {
     ...removedCard,
-    points: 1
+    point: 1
   };
   
-  // 將更新後的卡牌添加到目標牌組
+  // Add updated card to target deck
   updatedToDeck.push(updatedCard);
 
   // update to deck (winner card)
@@ -109,14 +110,14 @@ export function updateValueTransfer(
   if (myCardIndex !== -1) {
     updatedToDeck[myCardIndex] = {
       ...myCard,
-      points: myCard.points + 1
+      point: myCard.point + 1
     };
   }
   
   return { updatedFromDeck, updatedToDeck };
 }
 
-// 獲取元素關係描述
+// Get element relationship description
 export function getElementRelationship(fromElement: ElementType, toElement: ElementType): {
   relationship: "generates" | "restricts" | "neutral";
   description: string;
@@ -126,34 +127,34 @@ export function getElementRelationship(fromElement: ElementType, toElement: Elem
   if (distance === 1) {
     return {
       relationship: "generates",
-      description: `${elementNameMap[fromElement]}生${elementNameMap[toElement]}，效果加倍`
+      description: `${elementNameMap[fromElement]} generates ${elementNameMap[toElement]}, effect doubled`
     };
   } else if (distance === 2) {
     return {
       relationship: "restricts",
-      description: `${elementNameMap[fromElement]}克${elementNameMap[toElement]}，效果減半`
+      description: `${elementNameMap[fromElement]} restricts ${elementNameMap[toElement]}, effect halved`
     };
   } else {
     return {
       relationship: "neutral",
-      description: "無特殊關係"
+      description: "No special relationship"
     };
   }
 }
 
-// 中文元素名稱映射
+// Chinese element name mapping
 const elementNameMap = {
-  metal: "金",
-  wood: "木",
-  water: "水",
-  fire: "火",
-  earth: "土"
+  metal: "Metal",
+  wood: "Wood",
+  water: "Water",
+  fire: "Fire",
+  earth: "Earth"
 };
 
-// 修改生成玩家牌组的函数，如果已有牌组则使用现有牌组
-export const setupGame = (existingPlayerDeck?: Card[]): GameState => {
-  const playerDeck = existingPlayerDeck || (getInitialDeck() as Card[]);
-  const computerDeck = getInitialDeck() as Card[];
+// Modified function to generate player deck, uses existing deck if available
+export const setupGame = (existingPlayerDeck?: CardType[]): GameState => {
+  const playerDeck = existingPlayerDeck || (getInitialDeck() as CardType[]);
+  const computerDeck = getInitialDeck() as CardType[];
   
   return {
     ...initialGameState,
@@ -163,11 +164,11 @@ export const setupGame = (existingPlayerDeck?: Card[]): GameState => {
   };
 };
 
-// 添加这些辅助函数
-export const generatePlayerDeck = (): Card[] => {
-  return getInitialDeck() as Card[];
+// Helper functions
+export const generatePlayerDeck = (): CardType[] => {
+    return getInitialDeck() as CardType[];
 };
 
-export const generateComputerDeck = (): Card[] => {
-  return getInitialDeck() as Card[];
+export const generateComputerDeck = (): CardType[] => {
+  return getInitialDeck() as CardType[];
 }; 

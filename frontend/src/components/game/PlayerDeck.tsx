@@ -16,7 +16,7 @@ export const PlayerDeck: React.FC<PlayerDeckProps> = ({
   selectedCard,
 }) => {
   
-  // 計算每張卡片的偏移量
+  // Calculate offset for each card
   const getCardOffset = (index: number, total: number) => {
     return {
       x: (index - total / 2) * 60 + 40,
@@ -25,7 +25,7 @@ export const PlayerDeck: React.FC<PlayerDeckProps> = ({
     };
   };
 
-  // 處理卡片點擊
+  // Handle card click
   const handleCardClick = (card: CardType, index: number) => {
     if (isPlayer && !selectedCard) {
       onCardSelect && onCardSelect(card);
@@ -84,7 +84,7 @@ export const PlayerDeck: React.FC<PlayerDeckProps> = ({
       </motion.div> */}
       
       
-      {/* 卡片區域 */}
+      {/* Card Area */}
       <div 
         className={`relative h-48 w-full flex items-center justify-center ${
           isPlayer && !selectedCard ? "cursor-pointer" : ""
@@ -93,7 +93,7 @@ export const PlayerDeck: React.FC<PlayerDeckProps> = ({
       >
         <AnimatePresence>
           {cards.map((card, index) => {
-            // 如果卡片被選中，不在這裡渲染它
+            // Don't render if card is selected
             if (selectedCard && card.id === selectedCard.id) return null;
             
             return (
@@ -136,14 +136,14 @@ export const PlayerDeck: React.FC<PlayerDeckProps> = ({
                   card={card}
                   isFlipped={true}
                   isSelectable={isPlayer && !selectedCard}
-                  onClick={() => {}}  // 處理在外層div
+                  onClick={() => {}}  // Handled in outer div
                 />
               </motion.div>
             );
           })}
         </AnimatePresence>
         
-        {/* 空牌組提示 */}
+        {/* Empty Deck Message */}
         {cards.length === 0 && (
           <motion.div 
             className={`px-4 py-2 rounded-lg ${
@@ -152,12 +152,12 @@ export const PlayerDeck: React.FC<PlayerDeckProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            沒有卡片了
+            No cards left
           </motion.div>
         )}
       </div>
       
-      {/* 選擇狀態 */}
+      {/* Selection Status */}
       <motion.div 
         className={`mt-2 text-sm ${
           isPlayer ? "text-blue-600" : "text-red-600"
@@ -172,7 +172,7 @@ export const PlayerDeck: React.FC<PlayerDeckProps> = ({
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              <span>You selected: <strong>{selectedCard.points}</strong> <span className="text-xs opacity-70">#{selectedCard.id.slice(0, 4)}</span></span>
+              <span>You selected: <strong>{selectedCard.point}</strong> <span className="text-xs opacity-70">#{selectedCard.id.slice(0, 4)}</span></span>
             </div>
           ) : (
             <div className="flex items-center gap-2 animate-pulse">
@@ -180,7 +180,7 @@ export const PlayerDeck: React.FC<PlayerDeckProps> = ({
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <span>選擇一張卡牌</span>
+              <span>Choose a card</span>
             </div>
           )
         ) : (

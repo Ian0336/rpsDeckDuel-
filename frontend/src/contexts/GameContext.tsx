@@ -2,21 +2,23 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CardType } from '@/components/game/GameCard';
 import { getInitialDeck } from '@/lib/game-logic';
-import { Card, GameState, initialGameState } from '@/types/game';
+import { GameState, initialGameState } from '@/types/game';
 
-// 添加缺失的函数
-const generatePlayerDeck = (): Card[] => {
-  return getInitialDeck() as Card[];
+// Add missing functions
+const generatePlayerDeck = (): CardType[] => {
+  return getInitialDeck();
 };
 
-const generateComputerDeck = (): Card[] => {
-  return getInitialDeck() as Card[];
+const generateComputerDeck = (): CardType[] => {
+  return getInitialDeck();
 };
 
 export interface GameContextType {
   gameState: GameState;
-  playerDeck: Card[];
-  setPlayerDeck: (deck: Card[]) => void;
+  playerDeck: CardType[];  // All cards owned by the player
+  setPlayerDeck: (deck: CardType[]) => void;
+  selectedGameDeck: CardType[];  // 7 cards selected by player for the game
+  setSelectedGameDeck: (deck: CardType[]) => void;
   opponentDeck: CardType[];
   setOpponentDeck: React.Dispatch<React.SetStateAction<CardType[]>>;
   resetDecks: () => void;
@@ -42,50 +44,59 @@ interface GameProviderProps {
 
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [gameState, setGameState] = useState<GameState>(initialGameState);
-  const [playerDeck, setPlayerDeck] = useState<Card[]>([]);
+  const [playerDeck, setPlayerDeck] = useState<CardType[]>([]);
+  const [selectedGameDeck, setSelectedGameDeck] = useState<CardType[]>([]);
   const [opponentDeck, setOpponentDeck] = useState<CardType[]>([]);
   const [hasInitialized, setHasInitialized] = useState(false);
 
-  // 初始化牌組，只在第一次加載時執行
+  // Initialize deck, only executed on first load
   useEffect(() => {
-    // 檢查本地存儲中是否有保存的牌組
+    // Check if decks are saved in local storage
     const savedPlayerDeck = localStorage.getItem('playerDeck');
     const savedOpponentDeck = localStorage.getItem('opponentDeck');
+    const savedSelectedGameDeck = localStorage.getItem('selectedGameDeck');
 
     if (savedPlayerDeck && savedOpponentDeck) {
       setPlayerDeck(JSON.parse(savedPlayerDeck));
       setOpponentDeck(JSON.parse(savedOpponentDeck));
+      
+      if (savedSelectedGameDeck) {
+        setSelectedGameDeck(JSON.parse(savedSelectedGameDeck));
+      }
     } else {
-      setPlayerDeck(getInitialDeck() as Card[]);
+      setPlayerDeck(getInitialDeck());
       setOpponentDeck(getInitialDeck());
     }
     
     setHasInitialized(true);
   }, []);
 
-  // 當牌組變化時，保存到本地存儲
+  // Save to local storage when decks change
   useEffect(() => {
     if (hasInitialized) {
       localStorage.setItem('playerDeck', JSON.stringify(playerDeck));
       localStorage.setItem('opponentDeck', JSON.stringify(opponentDeck));
+      localStorage.setItem('selectedGameDeck', JSON.stringify(selectedGameDeck));
     }
-  }, [playerDeck, opponentDeck, hasInitialized]);
+  }, [playerDeck, opponentDeck, selectedGameDeck, hasInitialized]);
 
-  // 重置牌組的函數
+  // Function to reset decks
   const resetDecks = () => {
-    const newPlayerDeck = getInitialDeck() as Card[];
+    const newPlayerDeck = getInitialDeck();
     const newOpponentDeck = getInitialDeck();
     
     setPlayerDeck(newPlayerDeck);
     setOpponentDeck(newOpponentDeck);
+    setSelectedGameDeck([]);
     
     localStorage.setItem('playerDeck', JSON.stringify(newPlayerDeck));
     localStorage.setItem('opponentDeck', JSON.stringify(newOpponentDeck));
+    localStorage.setItem('selectedGameDeck', JSON.stringify([]));
   };
 
-  // 初始化游戏，但保留玩家牌组
+  // Initialize game but keep player deck
   const startGame = () => {
-    // 如果玩家牌组为空，则生成一个新的牌组
+    // Generate new player deck if empty
     const currentPlayerDeck = playerDeck.length > 0 
       ? playerDeck 
       : generatePlayerDeck();
@@ -104,18 +115,18 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     });
   };
 
-  // 实现 playCard 函数
+  // Implement playCard function
   const playCard = (cardIndex: number) => {
-    // 这里实现玩家出牌的逻辑
+    // Implement player card playing logic here
     console.log(`Playing card at index ${cardIndex}`);
-    // 根据您的游戏规则实现具体逻辑
+    // Implement specific game rules logic
   };
 
-  // 重置游戏但保留牌组
+  // Reset game but keep deck
   const resetGame = () => {
     setGameState({
       ...initialGameState,
-      playerDeck: playerDeck, // 保留当前玩家牌组
+      playerDeck: playerDeck, // Keep current player deck
     });
   };
 
@@ -125,6 +136,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         gameState,
         playerDeck,
         setPlayerDeck,
+        selectedGameDeck,
+        setSelectedGameDeck,
         opponentDeck,
         setOpponentDeck,
         resetDecks,
@@ -137,4 +150,4 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       {children}
     </GameContext.Provider>
   );
-}; 
+};

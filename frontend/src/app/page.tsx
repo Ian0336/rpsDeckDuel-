@@ -5,90 +5,97 @@ import { Button } from "@/components/ui/button";
 import { MatchmakingList, Player } from "@/components/game/MatchmakingList";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { useGameContext } from "@/contexts/GameContext";
 
 export default function Home() {
   const router = useRouter();
+  const { resetDecks, setSelectedGameDeck } = useGameContext();
   
-  // 配對狀態
+  // Matchmaking status
   const [availablePlayers, setAvailablePlayers] = useState<Player[]>([
-    { id: "1", name: "玩家 1", status: "available" },
-    { id: "2", name: "玩家 2", status: "available" },
-    { id: "3", name: "玩家 3", status: "in-game" },
-    { id: "4", name: "玩家 4", status: "available" },
+    { id: "1", name: "Player 1", status: "available" },
+    { id: "2", name: "Player 2", status: "available" },
+    { id: "3", name: "Player 3", status: "in-game" },
+    { id: "4", name: "Player 4", status: "available" },
   ]);
 
-  // 加入對戰
+  // Join match
   const handleJoinMatch = (playerId: string) => {
-    // 在實際應用中，這裡會連接到後端
-    // 現在我們只是模擬加入對戰
+    // In real application, this would connect to backend
+    // For now we just simulate joining a match
     setAvailablePlayers((prev) =>
       prev.map((player) =>
         player.id === playerId ? { ...player, status: "in-game" } : player
       )
     );
-    router.push('/game');
+    router.push('/deck-selection');
   };
 
-  // 開始與電腦對戰
+  // Start computer game
   const startComputerGame = () => {
-    router.push('/game');
+    // Clear any previously selected game deck
+    setSelectedGameDeck([]);
+    router.push('/deck-selection');
+  };
+
+  // Reset all decks
+  const handleResetDecks = () => {
+    resetDecks();
+    alert('All decks have been reset!');
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <header className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-2">石頭剪刀布卡牌決鬥</h1>
-        <p className="text-muted-foreground">
-          選擇你的卡牌，擊敗對手，贏得他們的卡片！
-        </p>
-      </header>
-
-      <div className="flex flex-col items-center gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-4xl"
-        >
-          <MatchmakingList players={availablePlayers} onJoinMatch={handleJoinMatch} />
-        </motion.div>
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
+      <div className="z-10 max-w-5xl w-full items-center justify-center font-mono text-sm flex flex-col">
+        <h1 className="text-4xl font-bold mb-8 text-center">Wuxing Deck Duel</h1>
         
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
+        <div className="grid gap-4 w-full max-w-md">
           <Button 
-            onClick={startComputerGame} 
-            size="lg"
-            className="relative overflow-hidden group bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
+            className="py-8 text-xl"
+            onClick={() => router.push('/deck-selection')}
           >
-            <motion.span 
-              className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"
-              whileHover={{ scale: 1.5, opacity: 0.2 }}
-              transition={{ duration: 0.3 }}
-            />
-            <motion.span
-              className="relative z-10 flex items-center gap-2"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 400, damping: 10 }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
-                <path d="M15 12c0 1.657-1.343 3-3 3s-3-1.343-3-3 1.343-3 3-3 3 1.343 3 3z"/>
-                <path d="M12 8v1"/>
-                <path d="M12 15v1"/>
-                <path d="M8 12H7"/>
-                <path d="M17 12h-1"/>
-                <path d="M9.879 9.879l-.707-.707"/>
-                <path d="M14.121 14.121l.707.707"/>
-                <path d="M9.879 14.121l-.707.707"/>
-                <path d="M14.121 9.879l.707-.707"/>
-              </svg>
-              開始與電腦對戰
-            </motion.span>
+            Choose Deck and Start Game
           </Button>
-        </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+          >
+            <Button 
+              onClick={startComputerGame} 
+              size="lg"
+              className="relative overflow-hidden group bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-300"
+            >
+              <motion.span 
+                className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"
+                whileHover={{ scale: 1.5, opacity: 0.2 }}
+                transition={{ duration: 0.3 }}
+              />
+              <motion.span
+                className="relative z-10 flex items-center gap-2"
+                whileHover={{ scale: 1.05 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                Play Against Computer
+              </motion.span>
+            </Button>
+          </motion.div>
+          
+          <Button 
+            variant="outline"
+            onClick={handleResetDecks}
+            className="mt-4"
+          >
+            Reset All Decks
+          </Button>
+          
+          <div className="mt-8 text-center text-gray-600 dark:text-gray-400">
+            <p>Choose 7 cards for a 5-round battle!</p>
+            <p>Win the duel to claim your opponent's cards!</p>
+          </div>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
